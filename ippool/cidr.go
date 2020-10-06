@@ -26,6 +26,11 @@ import (
 	"strconv"
 )
 
+type ipv6 struct {
+	H []byte
+	L []byte
+}
+
 // ipv4
 
 // NetworkAddress teturns the first IP address of an IP network
@@ -81,6 +86,7 @@ func LastFreeAddress(ipNet *net.IPNet) net.IP {
 	if len(ipNet.IP) == 4 {
 		last = LastFreeAddress4(ipNet)
 	} else if len(ipNet.IP) == 16 {
+		x := GetPrefixLength(ipNet)
 
 	}
 	return last

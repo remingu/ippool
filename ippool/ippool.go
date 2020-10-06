@@ -16,7 +16,6 @@
 package ippool
 
 import (
-	"fmt"
 	_ "fmt"
 	"math"
 	"net"
@@ -56,15 +55,7 @@ func InitPrefix(pool_ref *map[string]Prefix, prefix *net.IPNet, prefix_string st
 		pool.max_hosts = max_hosts
 		ref_pool[prefix_string] = pool
 	} else if len(prefix.IP) == 16 {
-		last_addr := LastFreeAddress(prefix)
-
-		fmt.Println(GetPrefixLength(prefix))
-		max_hosts := int(math.Pow(2, float64(128-GetPrefixLength(prefix)))) - 2
-		pool.last = last_addr
-		pool.first = first_addr
-		pool.first_available = first_addr
-		pool.max_hosts = max_hosts
-		ref_pool[prefix_string] = pool
+		LastFreeAddress(prefix)
 	}
 	mutex.Unlock()
 
@@ -76,22 +67,9 @@ func RequestIP(pool_ref *map[string]Prefix, prefix *net.IPNet) net.IP {
 	ref_pool := *pool_ref
 	network := GetNetLiteral(prefix)
 	pool := ref_pool[network]
-	ret_ip := pool.first_available
-	new_fa_ip := make([]byte, len(ret_ip))
-	copy(new_fa_ip, ret_ip)
-	pool.Used = append(pool.Used, ret_ip)
-	for i := len(new_fa_ip) - 1; i >= 0; i-- {
-		if new_fa_ip[i]+1 <= 254 {
-			new_fa_ip[i] = new_fa_ip[i] + 1
-			break
-		} else if new_fa_ip[i]+1 == 255 {
-			new_fa_ip[i] = 255
-		}
-	}
-	pool.first_available = new_fa_ip
 	ref_pool[network] = pool
 	mutex.Unlock()
-	return ret_ip
+	return net.IP{}
 }
 
 func InitPrefixPool() map[string]Prefix {
