@@ -21,12 +21,14 @@ package ippool
 
 import (
 	"encoding/binary"
+	"fmt"
+	"math"
 	"math/bits"
 	"net"
 	"strconv"
 )
 
-type ipv6 struct {
+type IPv6 struct {
 	H []byte
 	L []byte
 }
@@ -65,30 +67,53 @@ func LastFreeAddress4(ipNet *net.IPNet) net.IP {
 }
 
 func FirstFreeAddress(ipNet *net.IPNet) net.IP {
-	network := ipNet.IP
-	var fa_ip net.IP
-	fa_ip = network
-	for i := len(fa_ip) - 1; i >= 0; i-- {
-		if fa_ip[i]+1 <= 255 {
-			fa_ip[i] = fa_ip[i] + 1
-			break
-		} else {
-			fa_ip[i] = fa_ip[i] + 1
-		}
+
+	//mask := ipNet.Mask
+	if len(ipNet.IP) == 4 {
+		fmt.Println(1)
+	} else if len(ipNet.IP) == 16 {
+		fmt.Println(1)
 	}
-	return fa_ip
+	return net.IP{}
 }
 
 // ipv6
 
 func LastFreeAddress(ipNet *net.IPNet) net.IP {
+	var ui64 uint64
+	ui64 = 0
+	ui64 -= 1
+	var ipv6 IPv6
 	var last net.IP
 	if len(ipNet.IP) == 4 {
 		last = LastFreeAddress4(ipNet)
 	} else if len(ipNet.IP) == 16 {
-		x := GetPrefixLength(ipNet)
+		prefix_length := GetPrefixLength(ipNet)
+		for i := 0; i < 8; i++ {
+			ipv6.H = append(ipv6.H, ipNet.IP[i])
 
+		}
+		for i := 8; i < 16; i++ {
+			ipv6.L = append(ipv6.L, ipNet.IP[i])
+		}
+		//low := binary.BigEndian.Uint64(ipv6.L)
+		//high := binary.BigEndian.Uint64(ipv6.H)
+		fmt.Println(prefix_length)
+		host_part := 128 - prefix_length
+		var max_hosts uint64
+		max_hosts = 0
+		if host_part == 64 {
+			max_hosts = ui64
+		} else if host_part == 63 {
+			max_hosts = 9223372036854775808
+		} else if host_part < 63 {
+			max_hosts = uint64(math.Exp2(float64(prefix_length)))
+		} else {
+			// rabbit hole for later
+		}
+		fmt.Println(max_hosts)
 	}
+
 	return last
 }
 
@@ -109,4 +134,11 @@ func GetNetLiteral(prefix *net.IPNet) string {
 	prefix_length := GetPrefixLength(prefix)
 	nw_string := network + "/" + strconv.Itoa(prefix_length)
 	return nw_string
+}
+
+func GetMaxHosts(ipNet *net.IPNet) uint64 {
+	prefix := GetPrefixLength(ipNet)
+	hostrange := 128 - prefix
+	max_hosts := (math.Exp2(float64(hostrange))) - 1
+	return uint64(max_hosts)
 }

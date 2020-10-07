@@ -55,7 +55,7 @@ func InitPrefix(pool_ref *map[string]Prefix, prefix *net.IPNet, prefix_string st
 		pool.max_hosts = max_hosts
 		ref_pool[prefix_string] = pool
 	} else if len(prefix.IP) == 16 {
-		LastFreeAddress(prefix)
+		//last_addr := LastFreeAddress4(prefix)
 	}
 	mutex.Unlock()
 
@@ -67,16 +67,11 @@ func RequestIP(pool_ref *map[string]Prefix, prefix *net.IPNet) net.IP {
 	ref_pool := *pool_ref
 	network := GetNetLiteral(prefix)
 	pool := ref_pool[network]
-	ref_pool[network] = pool
-	mutex.Unlock()
-	return net.IP{}
+	ret_ip := pool.first_available
+	return ret_ip
 }
 
 func InitPrefixPool() map[string]Prefix {
 	pool := make(map[string]Prefix)
 	return pool
-}
-
-func bla() {
-
 }
