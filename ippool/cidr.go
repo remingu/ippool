@@ -138,7 +138,9 @@ func GetNetLiteral(prefix *net.IPNet) string {
 
 func GetMaxHosts(ipNet *net.IPNet) uint64 {
 	prefix := GetPrefixLength(ipNet)
+	fmt.Println()
 	hostrange := 128 - prefix
-	max_hosts := (math.Exp2(float64(hostrange))) - 1
+
+	max_hosts := Exp2nUInt64(hostrange) - 1
 	return uint64(max_hosts)
 }
