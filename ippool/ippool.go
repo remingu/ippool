@@ -17,7 +17,6 @@ package ippool
 
 import (
 	_ "fmt"
-	"math"
 	"net"
 	"sync"
 )
@@ -29,7 +28,7 @@ type Prefix struct {
 	first_available net.IP
 	first           net.IP
 	last            net.IP
-	max_hosts       int
+	max_hosts       uint64
 }
 
 func RegisterPrefix(pool_ref *map[string]Prefix, prefix *net.IPNet) {
@@ -47,28 +46,36 @@ func InitPrefix(pool_ref *map[string]Prefix, prefix *net.IPNet, prefix_string st
 	pool := ref_pool[prefix_string]
 	first_addr := FirstFreeAddress(prefix)
 	if len(prefix.IP) == 4 {
-		last_addr := LastFreeAddress4(prefix)
-		max_hosts := int(math.Pow(2, float64(32-GetPrefixLength(prefix)))) - 2
+		last_addr := LastFreeAddress(prefix)
+		max_hosts, _ := GetMaxHosts(prefix)
 		pool.last = last_addr
 		pool.first = first_addr
 		pool.first_available = first_addr
 		pool.max_hosts = max_hosts
 		ref_pool[prefix_string] = pool
 	} else if len(prefix.IP) == 16 {
-		//last_addr := LastFreeAddress4(prefix)
+		max_hosts, _ := GetMaxHosts(prefix)
+		pool.max_hosts = max_hosts
+		pool.first = first_addr
+		pool.first_available = first_addr
+		last_addr := LastFreeAddress(prefix)
+		pool.last = last_addr
+		ref_pool[prefix_string] = pool
 	}
 	mutex.Unlock()
-
 }
 
 func RequestIP(pool_ref *map[string]Prefix, prefix *net.IPNet) net.IP {
+	// wm -> tbdn
 	mutex := &sync.Mutex{}
 	mutex.Lock()
 	ref_pool := *pool_ref
 	network := GetNetLiteral(prefix)
 	pool := ref_pool[network]
 	ret_ip := pool.first_available
+	mutex.Unlock()
 	return ret_ip
+
 }
 
 func InitPrefixPool() map[string]Prefix {

@@ -21,8 +21,7 @@ package ippool
 
 import (
 	"encoding/binary"
-	"fmt"
-	"math"
+	"errors"
 	"math/bits"
 	"net"
 	"strconv"
@@ -67,51 +66,51 @@ func LastFreeAddress4(ipNet *net.IPNet) net.IP {
 }
 
 func FirstFreeAddress(ipNet *net.IPNet) net.IP {
-
-	//mask := ipNet.Mask
+	address := net.IP{}
 	if len(ipNet.IP) == 4 {
-		fmt.Println(1)
-	} else if len(ipNet.IP) == 16 {
-		fmt.Println(1)
+		start_index := binary.BigEndian.Uint32(ipNet.IP)
+		start_index += 1
+		ip := make([]byte, 4)
+		binary.BigEndian.PutUint32(ip, start_index)
+		address = ip
+	} else {
+		ipv6 := GetIpv6Struct(ipNet)
+		start_index_low := binary.BigEndian.Uint64(ipv6.L)
+		ip := make([]byte, 8)
+		start_index_low += 1
+		binary.BigEndian.PutUint64(ip, start_index_low)
+		ipv6.L = ip
+		var addr []byte
+		addr = append(addr, ipv6.H...)
+		addr = append(addr, ip...)
+		address = addr
 	}
-	return net.IP{}
+	return address
 }
 
 // ipv6
 
 func LastFreeAddress(ipNet *net.IPNet) net.IP {
-	var ui64 uint64
-	ui64 = 0
-	ui64 -= 1
-	var ipv6 IPv6
 	var last net.IP
+	var stop_index uint64
 	if len(ipNet.IP) == 4 {
 		last = LastFreeAddress4(ipNet)
 	} else if len(ipNet.IP) == 16 {
-		prefix_length := GetPrefixLength(ipNet)
-		for i := 0; i < 8; i++ {
-			ipv6.H = append(ipv6.H, ipNet.IP[i])
-
-		}
-		for i := 8; i < 16; i++ {
-			ipv6.L = append(ipv6.L, ipNet.IP[i])
-		}
-		//low := binary.BigEndian.Uint64(ipv6.L)
-		//high := binary.BigEndian.Uint64(ipv6.H)
-		fmt.Println(prefix_length)
-		host_part := 128 - prefix_length
-		var max_hosts uint64
-		max_hosts = 0
-		if host_part == 64 {
-			max_hosts = ui64
-		} else if host_part == 63 {
-			max_hosts = 9223372036854775808
-		} else if host_part < 63 {
-			max_hosts = uint64(math.Exp2(float64(prefix_length)))
+		ipv6 := GetIpv6Struct(ipNet)
+		max_hosts, _ := GetMaxHosts(ipNet)
+		start_index := binary.BigEndian.Uint64(ipv6.L)
+		if GetPrefixLength(ipNet) == 64 {
+			stop_index = start_index + max_hosts + 1
 		} else {
-			// rabbit hole for later
+			stop_index = start_index + max_hosts
 		}
-		fmt.Println(max_hosts)
+		ip := make([]byte, 8)
+		binary.BigEndian.PutUint64(ip, stop_index)
+		ipv6.L = ip
+		var addr []byte
+		addr = append(addr, ipv6.H...)
+		addr = append(addr, ip...)
+		last = addr
 	}
 
 	return last
@@ -136,11 +135,36 @@ func GetNetLiteral(prefix *net.IPNet) string {
 	return nw_string
 }
 
-func GetMaxHosts(ipNet *net.IPNet) uint64 {
-	prefix := GetPrefixLength(ipNet)
-	fmt.Println()
-	hostrange := 128 - prefix
+func GetMaxHosts(ipNet *net.IPNet) (uint64, error) {
+	//check needed to exclude Multicast/Anycast address ranges
+	var max_hosts uint64
+	var prefix_length int
+	if len(ipNet.IP) == 4 {
+		prefix_length = GetPrefixLength(ipNet)
+		if prefix_length >= 0 {
+			max_hosts = Exp2nUInt64(32-prefix_length) - 2
+			if max_hosts < 0 {
+				return 0, errors.New("invalid prefix")
+			}
+		}
+	} else {
+		prefix_length = 128 - GetPrefixLength(ipNet)
+		max_hosts = Exp2nUInt64(prefix_length) - 1
+		if prefix_length > 64 {
+			return 0, errors.New("invalid prefix size - must be between 64-128")
+		}
+	}
+	return max_hosts, nil
+}
 
-	max_hosts := Exp2nUInt64(hostrange) - 1
-	return uint64(max_hosts)
+func GetIpv6Struct(ipNet *net.IPNet) IPv6 {
+	var ipv6 IPv6
+	for i := 0; i < 8; i++ {
+		ipv6.H = append(ipv6.H, ipNet.IP[i])
+
+	}
+	for i := 8; i < 16; i++ {
+		ipv6.L = append(ipv6.L, ipNet.IP[i])
+	}
+	return ipv6
 }
