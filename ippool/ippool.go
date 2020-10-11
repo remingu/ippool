@@ -16,21 +16,23 @@
 package ippool
 
 import (
-	_ "fmt"
+	"encoding/binary"
+	"errors"
+	"fmt"
 	"net"
 	"sync"
 )
 
 type Prefix struct {
-	mutex           *sync.Mutex
-	Prefix          net.IPNet
-	Used            uint64
-	Released		[]RCont
-	max_hosts       uint64
+	mutex     *sync.Mutex
+	Prefix    net.IPNet
+	Used      uint64
+	Released  []RCont
+	max_hosts uint64
 }
 
 type RCont struct {
-	pos uint64
+	pos       uint64
 	blocksize uint64
 }
 
@@ -61,23 +63,22 @@ func InitPrefix(pool_ref *map[string]Prefix, prefix *net.IPNet, prefix_string st
 }
 
 func RequestIP(pool_ref *map[string]Prefix, prefix *net.IPNet) (net.IP, error) {
-	// wm -> tbdn
-	var ret_ip net.IP
-
+	var IPaddr net.IP
 	ref_pool := *pool_ref
 	network := GetNetLiteral(prefix)
 	pool := ref_pool[network]
-	if pool.Used <= pool.max_hosts {
-		if pool.Used == 0 {
-			ret_ip = pool.first_available
-			pool.Used += 1
-		}
+	if pool.Used < pool.max_hosts {
+		fmt.Println(pool.Used)
+		IPaddr = GetNextAddress(prefix, pool.Used)
+		fmt.Println(IPaddr)
+		pool.Used += 1
+		fmt.Println(pool.Used)
+		ref_pool[network] = pool
+	} else {
+		return nil, errors.New("prefix is full")
 	}
 
-
-
-
-	return (ret_ip, nil)
+	return IPaddr, nil
 
 }
 
@@ -86,6 +87,24 @@ func InitPrefixPool() map[string]Prefix {
 	return pool
 }
 
-func GetNextAddress(index uint64) uint64 {
-
+func GetNextAddress(prefix *net.IPNet, index uint64) net.IP {
+	var IPAddr net.IP
+	if len(prefix.IP) == 4 {
+		i := binary.BigEndian.Uint32(prefix.IP)
+		i += 1 + uint32(index)
+		new_addr := make([]byte, 4)
+		binary.BigEndian.PutUint32(new_addr, i)
+		IPAddr = new_addr
+		return IPAddr
+	} else {
+		addr := GetIpv6Struct(prefix)
+		i := binary.BigEndian.Uint64(addr.L)
+		i += 1 + index
+		fmt.Println(i)
+		new_addr := make([]byte, 8)
+		binary.BigEndian.PutUint64(new_addr, i)
+		IPAddr = append(IPAddr, addr.H...)
+		IPAddr = append(IPAddr, new_addr...)
+		return IPAddr
+	}
 }
