@@ -23,11 +23,12 @@ import (
 )
 
 type Prefix struct {
-	mutex     *sync.Mutex
-	Prefix    net.IPNet
-	Used      uint64
-	Released  []RCont
-	max_hosts uint64
+	mutex      *sync.Mutex
+	Prefix     net.IPNet
+	Used       uint64
+	Released32 []Cont32
+	Released64 []Cont64
+	max_hosts  uint64
 }
 
 type Cont32 struct {
