@@ -24,11 +24,14 @@ import (
 type Prefix struct {
 	mutex           *sync.Mutex
 	Prefix          net.IPNet
-	Used            []net.IP
-	first_available net.IP
-	first           net.IP
-	last            net.IP
+	Used            uint64
+	Released		[]RCont
 	max_hosts       uint64
+}
+
+type RCont struct {
+	pos uint64
+	blocksize uint64
 }
 
 func RegisterPrefix(pool_ref *map[string]Prefix, prefix *net.IPNet) {
@@ -40,45 +43,49 @@ func RegisterPrefix(pool_ref *map[string]Prefix, prefix *net.IPNet) {
 }
 
 func InitPrefix(pool_ref *map[string]Prefix, prefix *net.IPNet, prefix_string string) {
-	var mutex = &sync.Mutex{}
-	mutex.Lock()
 	ref_pool := *pool_ref
 	pool := ref_pool[prefix_string]
-	first_addr := FirstFreeAddress(prefix)
+
 	if len(prefix.IP) == 4 {
-		last_addr := LastFreeAddress(prefix)
 		max_hosts, _ := GetMaxHosts(prefix)
-		pool.last = last_addr
-		pool.first = first_addr
-		pool.first_available = first_addr
 		pool.max_hosts = max_hosts
+		pool.Used = 0
 		ref_pool[prefix_string] = pool
 	} else if len(prefix.IP) == 16 {
 		max_hosts, _ := GetMaxHosts(prefix)
 		pool.max_hosts = max_hosts
-		pool.first = first_addr
-		pool.first_available = first_addr
-		last_addr := LastFreeAddress(prefix)
-		pool.last = last_addr
-		ref_pool[prefix_string] = pool
+		pool.Used = 0
 	}
-	mutex.Unlock()
+	ref_pool[prefix_string] = pool
+
 }
 
-func RequestIP(pool_ref *map[string]Prefix, prefix *net.IPNet) net.IP {
+func RequestIP(pool_ref *map[string]Prefix, prefix *net.IPNet) (net.IP, error) {
 	// wm -> tbdn
-	mutex := &sync.Mutex{}
-	mutex.Lock()
+	var ret_ip net.IP
+
 	ref_pool := *pool_ref
 	network := GetNetLiteral(prefix)
 	pool := ref_pool[network]
-	ret_ip := pool.first_available
-	mutex.Unlock()
-	return ret_ip
+	if pool.Used <= pool.max_hosts {
+		if pool.Used == 0 {
+			ret_ip = pool.first_available
+			pool.Used += 1
+		}
+	}
+
+
+
+
+	return (ret_ip, nil)
 
 }
 
 func InitPrefixPool() map[string]Prefix {
 	pool := make(map[string]Prefix)
 	return pool
+}
+
+func GetNextAddress(index uint64) uint64 {
+
 }
