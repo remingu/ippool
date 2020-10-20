@@ -18,27 +18,15 @@ package ippool
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"net"
-	"sync"
 )
 
 type Prefix struct {
-	mutex      *sync.Mutex
-	Prefix     net.IPNet
-	Used       uint64
-	Released32 []Cont32
-	Released64 []Cont64
-	max_hosts  uint64
-}
-
-type Cont32 struct {
-	pos        uint32
-	addr_range uint32
-}
-
-type Cont64 struct {
-	pos        uint64
-	addr_range uint64
+	Prefix    net.IPNet
+	Used      uint64
+	Released  []BstNode
+	max_hosts uint64
 }
 
 func RegisterPrefix(pool_ref *map[string]Prefix, prefix *net.IPNet) {
@@ -50,20 +38,29 @@ func RegisterPrefix(pool_ref *map[string]Prefix, prefix *net.IPNet) {
 }
 
 func InitPrefix(pool_ref *map[string]Prefix, prefix *net.IPNet, prefix_string string) {
+	var i uint64
 	ref_pool := *pool_ref
 	pool := ref_pool[prefix_string]
 	if len(prefix.IP) == 4 {
 		max_hosts, _ := GetMaxHosts(prefix)
 		pool.max_hosts = max_hosts
 		pool.Used = 0
-		ref_pool[prefix_string] = pool
+		if pool.max_hosts > 65535 {
+			mmap_len := pool.max_hosts / 65535
+			for i = 0; i < mmap_len; i++ {
+				pool.Released = append(pool.Released, BstNode{})
+			}
+		}
 	} else if len(prefix.IP) == 16 {
 		max_hosts, _ := GetMaxHosts(prefix)
 		pool.max_hosts = max_hosts
 		pool.Used = 0
-	}
-	ref_pool[prefix_string] = pool
+		//fmt.Println("Exp2nUInt64(16)")
 
+	}
+
+	ref_pool[prefix_string] = pool
+	fmt.Println(pool)
 }
 
 func RequestIP(pool_ref *map[string]Prefix, prefix *net.IPNet) (net.IP, error) {
@@ -105,4 +102,9 @@ func GetNextAddress(prefix *net.IPNet, index uint64) net.IP {
 		IPAddr = append(IPAddr, new_addr...)
 		return IPAddr
 	}
+}
+
+func ReleaseIP(pool_ref *map[string]Prefix, prefix *net.IPNet, addr net.IP) bool {
+
+	return true
 }
