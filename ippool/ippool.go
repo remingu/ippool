@@ -25,6 +25,7 @@ import (
 type Prefix struct {
 	Prefix    net.IPNet
 	Used      uint64
+	Freed     uint64
 	Released  []BstNode
 	max_hosts uint64
 }
@@ -41,23 +42,11 @@ func InitPrefix(pool_ref *map[string]Prefix, prefix *net.IPNet, prefix_string st
 	var i uint64
 	ref_pool := *pool_ref
 	pool := ref_pool[prefix_string]
-	if len(prefix.IP) == 4 {
-		max_hosts, _ := GetMaxHosts(prefix)
-		pool.max_hosts = max_hosts
-		pool.Used = 0
-		if pool.max_hosts > 65535 {
-			mmap_len := pool.max_hosts / 65535
-			for i = 0; i < mmap_len; i++ {
-				pool.Released = append(pool.Released, BstNode{})
-			}
-		}
-	} else if len(prefix.IP) == 16 {
-		max_hosts, _ := GetMaxHosts(prefix)
-		pool.max_hosts = max_hosts
-		pool.Used = 0
-		//fmt.Println("Exp2nUInt64(16)")
+	max_hosts, _ := GetMaxHosts(prefix)
+	pool.max_hosts = max_hosts
 
-	}
+	pool.Used = 0
+	pool.Released = append(pool.Released, BstNode{})
 
 	ref_pool[prefix_string] = pool
 	fmt.Println(pool)

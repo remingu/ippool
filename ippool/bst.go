@@ -1,5 +1,4 @@
 // Copyright (c) 2020 Puneeth S (puneeth8994 - https://github.com/puneeth8994)
-
 // SPDX-License-Identifier: Apache-2.0
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
