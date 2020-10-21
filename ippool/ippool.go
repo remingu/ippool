@@ -23,11 +23,11 @@ import (
 )
 
 type Prefix struct {
-	Prefix    net.IPNet
-	Used      uint64
-	Freed     uint64
-	Released  []BstNode
-	max_hosts uint64
+	Prefix      net.IPNet
+	Used        uint64
+	FreedIPs    uint64
+	ReleasedIPs *BstNode
+	max_hosts   uint64
 }
 
 func RegisterPrefix(pool_ref *map[string]Prefix, prefix *net.IPNet) {
@@ -39,15 +39,12 @@ func RegisterPrefix(pool_ref *map[string]Prefix, prefix *net.IPNet) {
 }
 
 func InitPrefix(pool_ref *map[string]Prefix, prefix *net.IPNet, prefix_string string) {
-	var i uint64
 	ref_pool := *pool_ref
 	pool := ref_pool[prefix_string]
 	max_hosts, _ := GetMaxHosts(prefix)
 	pool.max_hosts = max_hosts
-
 	pool.Used = 0
-	pool.Released = append(pool.Released, BstNode{})
-
+	pool.FreedIPs = 0
 	ref_pool[prefix_string] = pool
 	fmt.Println(pool)
 }
@@ -58,9 +55,13 @@ func RequestIP(pool_ref *map[string]Prefix, prefix *net.IPNet) (net.IP, error) {
 	network := GetNetLiteral(prefix)
 	pool := ref_pool[network]
 	if pool.Used < pool.max_hosts {
-		IPaddr = GetNextAddress(prefix, pool.Used)
-		pool.Used += 1
-		ref_pool[network] = pool
+		if pool.FreedIPs == 0 {
+			IPaddr = GetNextAddress(prefix, pool.Used)
+			pool.Used += 1
+			ref_pool[network] = pool
+		} else {
+
+		}
 	} else {
 		return nil, errors.New("prefix is full")
 	}
@@ -94,6 +95,19 @@ func GetNextAddress(prefix *net.IPNet, index uint64) net.IP {
 }
 
 func ReleaseIP(pool_ref *map[string]Prefix, prefix *net.IPNet, addr net.IP) bool {
+	ref_pool := *pool_ref
+	network := GetNetLiteral(prefix)
+	pool := ref_pool[network]
 
+	if len(prefix.IP) == 4 {
+		i := binary.BigEndian.Uint32(prefix.IP)
+		fmt.Println(i)
+	} else {
+		addr := GetIpv6Struct(prefix)
+		i := binary.BigEndian.Uint64(addr.L)
+		pool.FreedIPs += 1
+		pool.ReleasedIPs.Insert(i)
+	}
+	ref_pool[network] = pool
 	return true
 }
