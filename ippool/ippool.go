@@ -60,6 +60,12 @@ func RequestIP(pool_ref *map[string]Prefix, prefix *net.IPNet) (net.IP, error) {
 			pool.Used += 1
 			ref_pool[network] = pool
 		} else {
+			if len(prefix.IP) == 4 {
+
+			} else {
+
+			}
+			index := pool.ReleasedIPs.FindLast()
 
 		}
 	} else {
@@ -121,6 +127,6 @@ func ReleaseIP(pool_ref *map[string]Prefix, prefix *net.IPNet, addr net.IP) erro
 	return nil
 }
 
-func IsIPinUse() {
-
+func IsIPinUse(pool_ref *map[string]Prefix, prefix *net.IPNet, addr net.IP) bool {
+	return false
 }
