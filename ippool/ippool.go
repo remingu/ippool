@@ -94,20 +94,33 @@ func GetNextAddress(prefix *net.IPNet, index uint64) net.IP {
 	}
 }
 
-func ReleaseIP(pool_ref *map[string]Prefix, prefix *net.IPNet, addr net.IP) bool {
+func ReleaseIP(pool_ref *map[string]Prefix, prefix *net.IPNet, addr net.IP) error {
 	ref_pool := *pool_ref
 	network := GetNetLiteral(prefix)
 	pool := ref_pool[network]
-
 	if len(prefix.IP) == 4 {
 		i := binary.BigEndian.Uint32(prefix.IP)
-		fmt.Println(i)
+		pool.FreedIPs += 1
+		err := pool.ReleasedIPs.Insert(uint64(i))
+		if err != nil {
+			fmt.Println(err)
+			return errors.New("unable to insert ip")
+		}
 	} else {
 		addr := GetIpv6Struct(prefix)
 		i := binary.BigEndian.Uint64(addr.L)
 		pool.FreedIPs += 1
-		pool.ReleasedIPs.Insert(i)
+		err := pool.ReleasedIPs.Insert(i)
+		if err != nil {
+			fmt.Println(err)
+			return errors.New("unable to insert ip")
+		}
+
 	}
 	ref_pool[network] = pool
-	return true
+	return nil
+}
+
+func IsIPinUse() {
+
 }
