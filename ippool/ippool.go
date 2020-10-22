@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 
 	"net"
 )
@@ -160,25 +161,24 @@ func ReleaseIP(pool_ref *map[string]Prefix, prefix *net.IPNet, addr net.IP) erro
 			AddrL = append(AddrL, addr[i])
 		}
 		network := GetIpv6Struct(prefix)
-		if bytes.Compare(network.H, AddrH ) != 0 {
+		if bytes.Compare(network.H, AddrH) != 0 {
 			return errors.New("invalid ip - address not in prefix range")
 		}
 		if prefixLength == 64 {
-			if binary.BigEndian.Uint64(AddrL) > binary.BigEndian.Uint64(network.L) + pool.max_hosts {
-				pool.FreedIPs++
-				err := pool.ReleasedIPs.Insert(binary.BigEndian.Uint64(AddrL))
-				if err != nil {
-					return errors.New("unable to insert ip6")
-				}
+			addrHighLimit := Exp2nUInt64(64)
+			fmt.Println(addrHighLimit)
+			pool.FreedIPs++
+			err := pool.ReleasedIPs.Insert(binary.BigEndian.Uint64(AddrL))
+			if err != nil {
+				return errors.New("unable to insert ip6")
 			}
 		} else {
-			if binary.BigEndian.Uint64(AddrL) > binary.BigEndian.Uint64(network.L) + pool.max_hosts {
+			if binary.BigEndian.Uint64(AddrL) > binary.BigEndian.Uint64(network.L)+pool.max_hosts {
 				return errors.New("invalid ip - address not in prefix range")
 			}
 			if binary.BigEndian.Uint64(AddrL) < binary.BigEndian.Uint64(network.L) {
 				return errors.New("invalid ip - address not in prefix range")
 			}
-			if
 			pool.FreedIPs++
 			err := pool.ReleasedIPs.Insert(binary.BigEndian.Uint64(AddrL))
 			if err != nil {
