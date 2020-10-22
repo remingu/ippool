@@ -161,7 +161,6 @@ func GetIpv6Struct(ipNet *net.IPNet) IPv6 {
 	var ipv6 IPv6
 	for i := 0; i < 8; i++ {
 		ipv6.H = append(ipv6.H, ipNet.IP[i])
-
 	}
 	for i := 8; i < 16; i++ {
 		ipv6.L = append(ipv6.L, ipNet.IP[i])

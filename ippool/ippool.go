@@ -16,6 +16,7 @@
 package ippool
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 
@@ -150,24 +151,50 @@ func ReleaseIP(pool_ref *map[string]Prefix, prefix *net.IPNet, addr net.IP) erro
 			}
 		}
 	} else {
-		addr := GetIpv6Struct(prefix)
-		//high := binary.BigEndian.Uint64(addr.H)
-		low := binary.BigEndian.Uint64(addr.L)
-		pool.FreedIPs += 1
-		err := pool.ReleasedIPs.Insert(low + 1)
-		if err != nil {
-			return errors.New("unable to insert ip6")
+		prefixLength := GetPrefixLength(prefix)
+		var AddrH, AddrL []byte
+		for i := 0; i < 8; i++ {
+			AddrH = append(AddrH, addr[i])
+		}
+		for i := 8; i < 16; i++ {
+			AddrL = append(AddrL, addr[i])
+		}
+		network := GetIpv6Struct(prefix)
+		if bytes.Compare(network.H, AddrH ) != 0 {
+			return errors.New("invalid ip - address not in prefix range")
+		}
+		if prefixLength == 64 {
+			if binary.BigEndian.Uint64(AddrL) > binary.BigEndian.Uint64(network.L) + pool.max_hosts {
+				pool.FreedIPs++
+				err := pool.ReleasedIPs.Insert(binary.BigEndian.Uint64(AddrL))
+				if err != nil {
+					return errors.New("unable to insert ip6")
+				}
+			}
+		} else {
+			if binary.BigEndian.Uint64(AddrL) > binary.BigEndian.Uint64(network.L) + pool.max_hosts {
+				return errors.New("invalid ip - address not in prefix range")
+			}
+			if binary.BigEndian.Uint64(AddrL) < binary.BigEndian.Uint64(network.L) {
+				return errors.New("invalid ip - address not in prefix range")
+			}
+			if
+			pool.FreedIPs++
+			err := pool.ReleasedIPs.Insert(binary.BigEndian.Uint64(AddrL))
+			if err != nil {
+				return errors.New("unable to insert ip6")
+			}
 		}
 	}
 	ref_pool[network] = pool
 	return nil
 }
 
-func IsIPinUse(pool_ref *map[string]Prefix, prefix *net.IPNet, addr net.IP) bool {
+func IPIsInUse(pool_ref *map[string]Prefix, prefix *net.IPNet, addr net.IP) bool {
 	ref_pool := *pool_ref
 	network := GetNetLiteral(prefix)
 	pool := ref_pool[network]
 	i := binary.BigEndian.Uint32(addr.To4())
-	_, x := pool.ReleasedIPs.Find(uint64(i))
-	return x
+	_, val := pool.ReleasedIPs.Find(uint64(i))
+	return val
 }
