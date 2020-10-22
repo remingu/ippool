@@ -1,3 +1,3 @@
-module github.com/remingu/ippool
+module ippool
 
 go 1.14

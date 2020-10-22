@@ -1,5 +1,4 @@
 // Copyright (c) 2020 Doc.ai and/or its affiliates.
-// Copyright (c) 2020 Daniel Schlifka
 
 // SPDX-License-Identifier: Apache-2.0
 //
