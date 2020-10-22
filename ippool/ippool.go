@@ -18,7 +18,7 @@ package ippool
 import (
 	"encoding/binary"
 	"errors"
-	"fmt"
+
 	"net"
 )
 
@@ -26,7 +26,7 @@ type Prefix struct {
 	Prefix      net.IPNet
 	Used        uint64
 	FreedIPs    uint64
-	ReleasedIPs *BstNode
+	ReleasedIPs BstNode
 	max_hosts   uint64
 }
 
@@ -46,32 +46,62 @@ func InitPrefix(pool_ref *map[string]Prefix, prefix *net.IPNet, prefix_string st
 	pool.Used = 0
 	pool.FreedIPs = 0
 	ref_pool[prefix_string] = pool
-	fmt.Println(pool)
 }
 
 func RequestIP(pool_ref *map[string]Prefix, prefix *net.IPNet) (net.IP, error) {
-	var IPaddr net.IP
+	var IPAddr net.IP
 	ref_pool := *pool_ref
 	network := GetNetLiteral(prefix)
 	pool := ref_pool[network]
 	if pool.Used < pool.max_hosts {
 		if pool.FreedIPs == 0 {
-			IPaddr = GetNextAddress(prefix, pool.Used)
-			pool.Used += 1
+			IPAddr = GetNextAddress(prefix, pool.Used)
+			pool.Used++
 			ref_pool[network] = pool
 		} else {
 			if len(prefix.IP) == 4 {
-
+				addr_uint32 := uint32(pool.ReleasedIPs.FindLast())
+				addr := make([]byte, 4)
+				binary.BigEndian.PutUint32(addr, addr_uint32)
+				pool.ReleasedIPs.Delete(uint64(addr_uint32))
+				pool.FreedIPs--
+				IPAddr = addr
 			} else {
-
+				addr := GetIpv6Struct(prefix)
+				addr_uint64 := pool.ReleasedIPs.FindLast()
+				new_addr := make([]byte, 8)
+				binary.BigEndian.PutUint64(new_addr, addr_uint64)
+				IPAddr = append(IPAddr, addr.H...)
+				IPAddr = append(IPAddr, new_addr...)
+				pool.ReleasedIPs.Delete(addr_uint64)
+				pool.FreedIPs--
 			}
-			index := pool.ReleasedIPs.FindLast()
-
 		}
 	} else {
-		return nil, errors.New("prefix is full")
+		if pool.FreedIPs == 0 {
+			return nil, errors.New("prefix is full")
+		} else {
+			if len(prefix.IP) == 4 {
+				addr_uint32 := uint32(pool.ReleasedIPs.FindLast())
+				addr := make([]byte, 4)
+				binary.BigEndian.PutUint32(addr, addr_uint32)
+				pool.ReleasedIPs.Delete(uint64(addr_uint32))
+				pool.FreedIPs--
+				IPAddr = addr
+			} else {
+				addr := GetIpv6Struct(prefix)
+				addr_uint64 := pool.ReleasedIPs.FindLast()
+				new_addr := make([]byte, 8)
+				binary.BigEndian.PutUint64(new_addr, addr_uint64)
+				IPAddr = append(IPAddr, addr.H...)
+				IPAddr = append(IPAddr, new_addr...)
+				pool.ReleasedIPs.Delete(addr_uint64)
+				pool.FreedIPs--
+			}
+		}
 	}
-	return IPaddr, nil
+	ref_pool[network] = pool
+	return IPAddr, nil
 }
 
 func InitPrefixPool() map[string]Prefix {
@@ -83,7 +113,7 @@ func GetNextAddress(prefix *net.IPNet, index uint64) net.IP {
 	var IPAddr net.IP
 	if len(prefix.IP) == 4 {
 		i := binary.BigEndian.Uint32(prefix.IP)
-		i += 1 + uint32(index)
+		i += uint32(index) + 1
 		new_addr := make([]byte, 4)
 		binary.BigEndian.PutUint32(new_addr, i)
 		IPAddr = new_addr
@@ -91,7 +121,7 @@ func GetNextAddress(prefix *net.IPNet, index uint64) net.IP {
 	} else {
 		addr := GetIpv6Struct(prefix)
 		i := binary.BigEndian.Uint64(addr.L)
-		i += 1 + index
+		i += index + 1
 		new_addr := make([]byte, 8)
 		binary.BigEndian.PutUint64(new_addr, i)
 		IPAddr = append(IPAddr, addr.H...)
@@ -105,28 +135,39 @@ func ReleaseIP(pool_ref *map[string]Prefix, prefix *net.IPNet, addr net.IP) erro
 	network := GetNetLiteral(prefix)
 	pool := ref_pool[network]
 	if len(prefix.IP) == 4 {
-		i := binary.BigEndian.Uint32(prefix.IP)
-		pool.FreedIPs += 1
-		err := pool.ReleasedIPs.Insert(uint64(i))
-		if err != nil {
-			fmt.Println(err)
-			return errors.New("unable to insert ip")
+		addr_uint32 := binary.BigEndian.Uint32(addr.To4())
+		addr_first := binary.BigEndian.Uint32(FirstFreeAddress(prefix))
+		addr_last := binary.BigEndian.Uint32(LastFreeAddress(prefix))
+		if addr_uint32 > addr_last || addr_uint32 < addr_first {
+			return errors.New("invalid ip - address not in prefix range")
+		} else {
+			pool.FreedIPs++
+			x := make([]byte, 4)
+			binary.BigEndian.PutUint32(x, addr_uint32)
+			err := pool.ReleasedIPs.Insert(uint64(addr_uint32))
+			if err != nil {
+				return errors.New("unable to insert ip4")
+			}
 		}
 	} else {
 		addr := GetIpv6Struct(prefix)
-		i := binary.BigEndian.Uint64(addr.L)
+		//high := binary.BigEndian.Uint64(addr.H)
+		low := binary.BigEndian.Uint64(addr.L)
 		pool.FreedIPs += 1
-		err := pool.ReleasedIPs.Insert(i)
+		err := pool.ReleasedIPs.Insert(low + 1)
 		if err != nil {
-			fmt.Println(err)
-			return errors.New("unable to insert ip")
+			return errors.New("unable to insert ip6")
 		}
-
 	}
 	ref_pool[network] = pool
 	return nil
 }
 
 func IsIPinUse(pool_ref *map[string]Prefix, prefix *net.IPNet, addr net.IP) bool {
-	return false
+	ref_pool := *pool_ref
+	network := GetNetLiteral(prefix)
+	pool := ref_pool[network]
+	i := binary.BigEndian.Uint32(addr.To4())
+	_, x := pool.ReleasedIPs.Find(uint64(i))
+	return x
 }

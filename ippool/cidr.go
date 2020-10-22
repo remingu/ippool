@@ -69,7 +69,7 @@ func FirstFreeAddress(ipNet *net.IPNet) net.IP {
 	address := net.IP{}
 	if len(ipNet.IP) == 4 {
 		start_index := binary.BigEndian.Uint32(ipNet.IP)
-		start_index += 1
+		start_index++
 		ip := make([]byte, 4)
 		binary.BigEndian.PutUint32(ip, start_index)
 		address = ip
@@ -77,7 +77,7 @@ func FirstFreeAddress(ipNet *net.IPNet) net.IP {
 		ipv6 := GetIpv6Struct(ipNet)
 		start_index_low := binary.BigEndian.Uint64(ipv6.L)
 		ip := make([]byte, 8)
-		start_index_low += 1
+		start_index_low++
 		binary.BigEndian.PutUint64(ip, start_index_low)
 		ipv6.L = ip
 		var addr []byte
