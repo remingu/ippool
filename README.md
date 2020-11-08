@@ -48,12 +48,18 @@ ipaddr, err := ippool.RequestIP(&pool, IPNet)
 
 ### release an assigned address
 
+ReleaseIP() expects a pointer to the pool,the according net.IPNet Prefix and the address as net.IP.
+Returns nil or an error if the address can't be released
+
 ```
 err := ippool.ReleaseIP(&pool, IPnet, ipaddr)
 ```
 
 ### check if an ip is in use
 
+IsIPInUse() expects a pointer to the pool,the according net.IPNet Prefix and the address as net.IP.
+Returns a boolean
+
 ```
-bool := IsIPInUse(&pool, IPnet, ipaddr)
+BoolVal := IsIPInUse(&pool, IPnet, ipaddr)
 ```
