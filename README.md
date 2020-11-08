@@ -6,7 +6,7 @@ The ippool package provides a basic utility to manage and track a pools of ip ad
 
 ### create a new pool 
 
-InitPrefixPool() will return a pointer to a map of prefixes
+InitPrefixPool() will return a pointer to a map of prefixes.
 
 ```
 pool := ippool.InitPrefixPool()
@@ -16,8 +16,9 @@ pool := ippool.InitPrefixPool()
 
 ### register a new prefix
 
-ippool expects a net.IPNet struct to register a prefix
-you can convert a regular IP Address with prefix using golangs net.ParseCidr function
+ippool expects a net.IPNet struct to register a prefix.
+
+Converting a regular IP Address string with cidr-prefix to net.IPNet using golangs net.ParseCidr function.
 
 
 ```
@@ -40,7 +41,7 @@ ippool.RegisterPrefix(&pool, IPnet)
 ### request a new address 
 
 RequestIP() expects a pointer to the pool and the according net.IPNet Prefix.
-It will return an ip address as net.IP.
+It will return an ip address as net.IP or nil and the error.
 
 ```
 ipaddr, err := ippool.RequestIP(&pool, IPNet)

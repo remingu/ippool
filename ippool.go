@@ -32,6 +32,7 @@ type Prefix struct {
 
 func RegisterPrefix(pool_ref *map[string]Prefix, prefix *net.IPNet) {
 	// registers a new prefix to prefix map.
+	// tbd - check needed if a prefix is already registered
 	var new_prefix string
 	new_prefix = GetNetLiteral(prefix)
 	pool := *pool_ref
