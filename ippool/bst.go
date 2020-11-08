@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This file is modified - the original implementation can be found at
+// This file is downstripped and modified - the original implementation can be found at
 // https://github.com/puneeth8994/binary-tree-go-impl/main.go
 
 package ippool
