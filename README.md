@@ -1,6 +1,6 @@
 # ippool
 
-The ippool package provides a basic utility to manage and track a pools of ip addresses and their assignment state.
+The ippool package provides a basic utility to manage and track pools of ip addresses and their assignment state.
 
 ## usage:
 
