@@ -22,7 +22,7 @@ pool := ippool.InitPrefixPool()
 
 ### register a new prefix
 
-ippool expects a net.IPNet struct to register a prefix.
+ippool expects a net.IPNet struct to register a prefix. Max Prefix Size is /64.
 
 Converting a regular IP Address string with cidr-prefix to net.IPNet using golangs net.ParseCidr function.
 
