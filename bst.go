@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This file is downstripped and modified - the original implementation can be found at
+// This file is down-stripped and modified - the original implementation can be found at
 // https://github.com/puneeth8994/binary-tree-go-impl/main.go
 
 package ippool
@@ -31,7 +31,7 @@ func (t *BstNode) Insert(value uint64) error {
 		return errors.New("Tree is nil")
 	}
 	if t.val == value {
-		return errors.New("This node value already exists")
+		return errors.New("This address already exists")
 	}
 	if t.val > value {
 		if t.left == nil {
