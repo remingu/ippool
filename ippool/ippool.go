@@ -149,7 +149,7 @@ func ReleaseIP(pool_ref *map[string]Prefix, prefix *net.IPNet, addr net.IP) erro
 			return errors.New("invalid ip - address not in prefix range")
 		} else if addr_uint32 > addr_last_used {
 			/* we need to check that an IP is already assigned before adding it to the "free IPs" binary tree.
-			   Otherwise we can free IPs that are out of boundary of the assignment checks which can and in duplicate address assignment.
+			   Otherwise we can free IPs that are out of boundary of the assignment checks which can end in duplicate address assignment.
 			*/
 			return errors.New("ip is not in use and must not be released")
 		} else {
