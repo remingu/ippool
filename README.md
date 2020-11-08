@@ -4,6 +4,13 @@ The ippool package provides a basic utility to manage and track a pools of ip ad
 
 ## usage:
 
+### import
+
+```
+import "github.com/remingu/ippool"
+```
+
+
 ### create a new pool 
 
 InitPrefixPool() will return a pointer to a map of prefixes.
