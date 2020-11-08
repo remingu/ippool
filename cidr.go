@@ -14,7 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package ipreg provides common functions useful when working with Classless Inter-Domain Routing (CIDR)
+// Package provides common functions useful when working with Classless Inter-Domain Routing (CIDR)
+// source modified - Daniel Schlifka 2020
+// The Original Code can be found at https://github.com/networkservicemesh/sdk/blob/master/pkg/tools/cidr/cidr.go
 
 package ippool
 
