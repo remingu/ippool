@@ -19,8 +19,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"fmt"
-
 	"net"
 )
 
@@ -33,6 +31,7 @@ type Prefix struct {
 }
 
 func RegisterPrefix(pool_ref *map[string]Prefix, prefix *net.IPNet) {
+	// registers a new prefix to prefix map.
 	var new_prefix string
 	new_prefix = GetNetLiteral(prefix)
 	pool := *pool_ref
@@ -41,6 +40,7 @@ func RegisterPrefix(pool_ref *map[string]Prefix, prefix *net.IPNet) {
 }
 
 func InitPrefix(pool_ref *map[string]Prefix, prefix *net.IPNet, prefix_string string) {
+	// detect and set basic parameters for a prefix
 	ref_pool := *pool_ref
 	pool := ref_pool[prefix_string]
 	max_hosts, _ := GetMaxHosts(prefix)
@@ -107,6 +107,7 @@ func RequestIP(pool_ref *map[string]Prefix, prefix *net.IPNet) (net.IP, error) {
 }
 
 func InitPrefixPool() map[string]Prefix {
+	// initializes a map which will contain all prefixes later on
 	pool := make(map[string]Prefix)
 	return pool
 }
@@ -133,6 +134,7 @@ func GetNextAddress(prefix *net.IPNet, index uint64) net.IP {
 }
 
 func ReleaseIP(pool_ref *map[string]Prefix, prefix *net.IPNet, addr net.IP) error {
+
 	ref_pool := *pool_ref
 	network := GetNetLiteral(prefix)
 	pool := ref_pool[network]
@@ -140,9 +142,18 @@ func ReleaseIP(pool_ref *map[string]Prefix, prefix *net.IPNet, addr net.IP) erro
 		addr_uint32 := binary.BigEndian.Uint32(addr.To4())
 		addr_first := binary.BigEndian.Uint32(FirstFreeAddress(prefix))
 		addr_last := binary.BigEndian.Uint32(LastFreeAddress(prefix))
+		addr_last_used := (uint32(pool.Used) + addr_first)
+
 		if addr_uint32 > addr_last || addr_uint32 < addr_first {
+			// detect the freed IP really belongs to the registered prefix range
 			return errors.New("invalid ip - address not in prefix range")
+		} else if addr_uint32 > addr_last_used {
+			/* we need to check that an IP is already assigned before adding it to the "free IPs" binary tree.
+			   Otherwise we can free IPs that are out of boundary of the assignment checks which can and in duplicate address assignment.
+			*/
+			return errors.New("ip is not in use and must not be released")
 		} else {
+			// check
 			pool.FreedIPs++
 			x := make([]byte, 4)
 			binary.BigEndian.PutUint32(x, addr_uint32)
@@ -165,8 +176,6 @@ func ReleaseIP(pool_ref *map[string]Prefix, prefix *net.IPNet, addr net.IP) erro
 			return errors.New("invalid ip - address not in prefix range")
 		}
 		if prefixLength == 64 {
-			addrHighLimit := Exp2nUInt64(64)
-			fmt.Println(addrHighLimit)
 			pool.FreedIPs++
 			err := pool.ReleasedIPs.Insert(binary.BigEndian.Uint64(AddrL))
 			if err != nil {
