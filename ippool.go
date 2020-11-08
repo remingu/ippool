@@ -41,7 +41,7 @@ func RegisterPrefix(pool_ref *map[string]Prefix, prefix *net.IPNet) {
 }
 
 func InitPrefix(pool_ref *map[string]Prefix, prefix *net.IPNet, prefix_string string) {
-	// detect and set basic parameters for a prefix
+	// calculate and set basic parameters for a prefix
 	ref_pool := *pool_ref
 	pool := ref_pool[prefix_string]
 	max_hosts, _ := GetMaxHosts(prefix)

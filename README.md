@@ -19,8 +19,6 @@ InitPrefixPool() will return a pointer to a map of prefixes.
 pool := ippool.InitPrefixPool()
 ``` 
 
- 
-
 ### register a new prefix
 
 ippool expects a net.IPNet struct to register a prefix.
