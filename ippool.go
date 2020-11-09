@@ -30,14 +30,18 @@ type Prefix struct {
 	max_hosts   uint64
 }
 
-func RegisterPrefix(pool_ref *map[string]Prefix, prefix *net.IPNet) {
+func RegisterPrefix(pool_ref *map[string]Prefix, prefix *net.IPNet) error {
 	// registers a new prefix to prefix map.
-	// tbd - check needed if a prefix is already registered
 	var new_prefix string
 	new_prefix = GetNetLiteral(prefix)
 	pool := *pool_ref
-	pool[new_prefix] = Prefix{}
-	InitPrefix(pool_ref, prefix, new_prefix)
+	if _, ok := pool[new_prefix]; ok {
+		return errors.New("prefix already exists")
+	} else {
+		pool[new_prefix] = Prefix{}
+		InitPrefix(pool_ref, prefix, new_prefix)
+		return nil
+	}
 }
 
 func InitPrefix(pool_ref *map[string]Prefix, prefix *net.IPNet, prefix_string string) {
