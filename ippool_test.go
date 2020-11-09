@@ -51,7 +51,7 @@ func TestRegisterPrefix6_DuplicatePrefixes(t *testing.T) {
 }
 
 func TestRequestIP4_1(t *testing.T) {
-	// test first assignment
+	// test assignment
 	expected_addr, _, _ := net.ParseCIDR("192.168.0.1/24")
 	pool := InitPrefixPool()
 	_, IPNet, _ := net.ParseCIDR("192.168.0.0/24")
@@ -63,7 +63,7 @@ func TestRequestIP4_1(t *testing.T) {
 }
 
 func TestRequestIP4_2(t *testing.T) {
-	// test if request() return error when prefix boundary is reached
+	// test if RequestIP() return error when prefix boundary is reached
 	// last address is ipv4 broadcast and shall not be assigned
 	pool := InitPrefixPool()
 	_, IPNet, _ := net.ParseCIDR("192.168.0.0/28")
@@ -79,6 +79,7 @@ func TestRequestIP4_2(t *testing.T) {
 }
 
 func TestRequestIP6_1(t *testing.T) {
+	//test assignment
 	expected_addr, _, _ := net.ParseCIDR("FE80::1/72")
 	pool := InitPrefixPool()
 	_, IPNet, _ := net.ParseCIDR("FE80::0/72")
@@ -90,6 +91,7 @@ func TestRequestIP6_1(t *testing.T) {
 }
 
 func TestRequestIP6_2(t *testing.T) {
+	// test if RequestIP() returns error when prefix boundary is reached
 	var i uint64
 	pool := InitPrefixPool()
 	_, IPNet, _ := net.ParseCIDR("FE80::0/120")
